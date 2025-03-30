@@ -9,7 +9,6 @@ const PORT = process.env.PORT || 3000;
 
 app.set("trust proxy", 1); // ✅ Allow Express to trust Railway's proxy
 
-
 // Middleware
 app.use(bodyParser.json());
 
@@ -20,16 +19,22 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Redis Client
-const redis = require("redis");
-
+// ✅ Redis Client (Fixed)
 const redisClient = redis.createClient({
     url: process.env.REDIS_URL
 });
 
-redisClient.on("error", (err) => console.error("Redis Error:", err));
-redisClient.connect().catch(console.error);
+redisClient.on("error", (err) => console.error("❌ Redis Error:", err));
 
+// ✅ Ensure Redis connects properly before using it
+(async () => {
+    try {
+        await redisClient.connect();
+        console.log("✅ Redis connected successfully");
+    } catch (err) {
+        console.error("❌ Redis connection error:", err);
+    }
+})();
 
 // ✅ Fix: Add a route for "/"
 app.get("/", (req, res) => {
@@ -52,5 +57,5 @@ app.post("/verify-emails", async (req, res) => {
 
 // Start Server
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`🚀 Server is running on port ${PORT}`);
 });
