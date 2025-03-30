@@ -20,11 +20,20 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // ✅ Redis Client (Fixed)
+const redis = require("redis");
+
 const redisClient = redis.createClient({
-    url: process.env.REDIS_URL
+    socket: {
+        host: process.env.REDIS_HOST,  // ✅ Use Railway Redis host
+        port: process.env.REDIS_PORT   // ✅ Use Railway Redis port
+    }
 });
 
 redisClient.on("error", (err) => console.error("❌ Redis Error:", err));
+
+// Connect to Redis
+redisClient.connect().catch(console.error);
+
 
 // ✅ Ensure Redis connects properly before using it
 (async () => {
