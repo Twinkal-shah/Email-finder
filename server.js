@@ -7,6 +7,9 @@ const { verifyEmailWithCache } = require("./verifyEmail");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.set("trust proxy", 1); // ✅ Allow Express to trust Railway's proxy
+
+
 // Middleware
 app.use(bodyParser.json());
 
@@ -18,8 +21,15 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Redis Client
-const redisClient = redis.createClient();
+const redis = require("redis");
+
+const redisClient = redis.createClient({
+    url: process.env.REDIS_URL
+});
+
 redisClient.on("error", (err) => console.error("Redis Error:", err));
+redisClient.connect().catch(console.error);
+
 
 // ✅ Fix: Add a route for "/"
 app.get("/", (req, res) => {
