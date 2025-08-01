@@ -1,13 +1,13 @@
 const express = require("express");
 const rateLimit = require("express-rate-limit");
 const bodyParser = require("body-parser");
-const redis = require("redis"); // ✅ Only once
+const redis = require("redis");
 const { verifyEmailWithCache } = require("./verifyEmail");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.set("trust proxy", 1); // ✅ Allow Express to trust Railway's proxy
+app.set("trust proxy", 1); // ✅ Allow Express to trust Render or Railway proxy
 
 // Middleware
 app.use(bodyParser.json());
@@ -19,11 +19,11 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// ✅ Redis Client
+// ✅ Redis Client with Upstash TLS
 const redisClient = redis.createClient({
+    url: process.env.REDIS_URL,
     socket: {
-        host: process.env.REDIS_HOST,
-        port: process.env.REDIS_PORT
+        tls: true // Required for Upstash over TLS
     }
 });
 
@@ -33,7 +33,7 @@ redisClient.on("error", (err) => console.error("❌ Redis Error:", err));
 (async () => {
     try {
         await redisClient.connect();
-        console.log("✅ Redis connected successfully");
+        console.log("✅ Connected to Upstash Redis");
     } catch (err) {
         console.error("❌ Redis connection error:", err);
     }
