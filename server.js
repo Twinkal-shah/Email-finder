@@ -1,7 +1,7 @@
 const express = require("express");
 const rateLimit = require("express-rate-limit");
 const bodyParser = require("body-parser");
-const redis = require("redis");
+const redis = require("redis"); // ✅ Only once
 const { verifyEmailWithCache } = require("./verifyEmail");
 
 const app = express();
@@ -19,23 +19,17 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// ✅ Redis Client (Fixed)
-const redis = require("redis");
-
+// ✅ Redis Client
 const redisClient = redis.createClient({
     socket: {
-        host: process.env.REDIS_HOST,  // ✅ Use Railway Redis host
-        port: process.env.REDIS_PORT   // ✅ Use Railway Redis port
+        host: process.env.REDIS_HOST,
+        port: process.env.REDIS_PORT
     }
 });
 
 redisClient.on("error", (err) => console.error("❌ Redis Error:", err));
 
 // Connect to Redis
-redisClient.connect().catch(console.error);
-
-
-// ✅ Ensure Redis connects properly before using it
 (async () => {
     try {
         await redisClient.connect();
@@ -45,7 +39,7 @@ redisClient.connect().catch(console.error);
     }
 })();
 
-// ✅ Fix: Add a route for "/"
+// ✅ Health check route
 app.get("/", (req, res) => {
     res.send("Email Verification API is running!");
 });
@@ -57,9 +51,9 @@ app.post("/verify-emails", async (req, res) => {
         return res.status(400).json({ error: "Emails should be a non-empty array" });
     }
 
-    const results = await Promise.all(emails.map(async (email) => {
-        return await verifyEmailWithCache(email, redisClient);
-    }));
+    const results = await Promise.all(
+        emails.map(async (email) => await verifyEmailWithCache(email, redisClient))
+    );
 
     res.json({ results });
 });
